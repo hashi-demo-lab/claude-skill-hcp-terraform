@@ -162,12 +162,38 @@ deployment "<deployment_name>" {
 
 - **deployment_name** (label, required): Unique identifier for this deployment
 - **inputs** (required): Map of input variable values
+- **destroy** (optional, default: false): Boolean flag to destroy this deployment
 
 ### Constraints
 
 - Minimum 1 deployment per Stack
 - Maximum 20 deployments per Stack
 - No meta-arguments supported (no `for_each`, `count`)
+
+### Destroying a Deployment
+
+To safely remove a deployment from your Stack:
+
+1. Set `destroy = true` in the deployment block
+2. Apply the plan through HCP Terraform
+3. After successful destruction, remove the deployment block from your configuration
+
+**Important**: Using the `destroy` argument ensures your configuration has the provider authentication necessary to properly destroy the deployment's resources.
+
+**Example:**
+```hcl
+deployment "old_environment" {
+  inputs = {
+    aws_region     = "us-west-1"
+    instance_count = 2
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+  destroy = true  # Mark for destruction
+}
+```
+
+After applying this plan and the deployment is destroyed, remove the entire `deployment "old_environment"` block from your configuration.
 
 ### Examples
 

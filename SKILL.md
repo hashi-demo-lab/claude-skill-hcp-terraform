@@ -335,6 +335,24 @@ deployment "production" {
 }
 ```
 
+**Destroying a Deployment:**
+
+To safely remove a deployment:
+
+```hcl
+deployment "old_environment" {
+  inputs = {
+    aws_region     = "us-west-1"
+    instance_count = 2
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+  destroy = true  # Mark for destruction
+}
+```
+
+After applying the plan and the deployment is destroyed, remove the deployment block from your configuration.
+
 ### Deployment Group Block
 
 Group deployments together to configure shared settings (Premium feature):

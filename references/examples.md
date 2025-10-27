@@ -11,6 +11,7 @@ Complete, working examples for common Terraform Stacks scenarios.
 5. [Linked Stacks (Cross-Stack Dependencies)](#linked-stacks-cross-stack-dependencies)
 6. [Multi-Cloud Stack](#multi-cloud-stack)
 7. [Complete AWS Production Stack](#complete-aws-production-stack)
+8. [Destroying Deployments](#destroying-deployments)
 
 ## Simple Single-Region Stack
 
@@ -1360,3 +1361,113 @@ terraform stacks plan --deployment=production
 ```bash
 terraform stacks apply --deployment=staging
 ```
+
+## Destroying Deployments
+
+Example of safely removing a deployment from your Stack.
+
+### Scenario
+
+You want to decommission the "development" deployment while keeping staging and production active.
+
+### Step 1: Mark Deployment for Destruction
+
+Update your `deployments.tfdeploy.hcl` file to set `destroy = true`:
+
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+}
+
+# Mark this deployment for destruction
+deployment "development" {
+  inputs = {
+    aws_region     = "us-east-1"
+    environment    = "dev"
+    instance_count = 1
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+  destroy = true  # This tells HCP Terraform to destroy all resources
+}
+
+# Keep these deployments active
+deployment "staging" {
+  inputs = {
+    aws_region     = "us-west-1"
+    environment    = "staging"
+    instance_count = 2
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment "production" {
+  inputs = {
+    aws_region     = "us-west-1"
+    environment    = "prod"
+    instance_count = 5
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+```
+
+### Step 2: Plan and Apply
+
+```bash
+# Review the destruction plan
+terraform stacks plan --deployment=development
+
+# Apply the destruction
+terraform stacks apply --deployment=development
+```
+
+HCP Terraform will destroy all resources in the development deployment.
+
+### Step 3: Remove the Deployment Block
+
+After the deployment is successfully destroyed, remove the entire deployment block from your configuration:
+
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+}
+
+# deployment "development" block has been removed
+
+deployment "staging" {
+  inputs = {
+    aws_region     = "us-west-1"
+    environment    = "staging"
+    instance_count = 2
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment "production" {
+  inputs = {
+    aws_region     = "us-west-1"
+    environment    = "prod"
+    instance_count = 5
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+```
+
+### Important Notes
+
+- **Provider Authentication**: The `destroy` argument ensures your configuration retains the provider authentication needed to destroy resources
+- **Do Not Remove Immediately**: Don't remove the deployment block until after the destruction is complete
+- **Verify Before Removing**: Check HCP Terraform UI to confirm all resources are destroyed before removing the block
+- **Alternative**: You could manually destroy resources through HCP Terraform UI, but using `destroy = true` is the recommended approach for maintaining infrastructure-as-code practices

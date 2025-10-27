@@ -135,6 +135,15 @@ Guide them to use:
 - Pass token to provider configuration in deployment inputs
 - Use `assume_role_with_web_identity` in AWS provider config
 
+### When Users Ask About Destroying/Removing Deployments
+
+Guide them to:
+1. Set `destroy = true` in the deployment block
+2. Apply the plan through HCP Terraform (this destroys all resources)
+3. After successful destruction, remove the deployment block from configuration
+
+**Important**: Using `destroy = true` ensures provider authentication is retained during resource destruction. See references/deployment-blocks.md lines 173-196 and references/examples.md "Destroying Deployments" section.
+
 ## Common Errors and Solutions
 
 ### "Deprecated filename usage" Warning
