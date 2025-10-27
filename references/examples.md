@@ -5,11 +5,12 @@ Complete, working examples for common Terraform Stacks scenarios.
 ## Table of Contents
 
 1. [Simple Single-Region Stack](#simple-single-region-stack)
-2. [Multi-Environment Stack](#multi-environment-stack)
-3. [Multi-Region Stack](#multi-region-stack)
-4. [Linked Stacks (Cross-Stack Dependencies)](#linked-stacks-cross-stack-dependencies)
-5. [Multi-Cloud Stack](#multi-cloud-stack)
-6. [Complete AWS Production Stack](#complete-aws-production-stack)
+2. [Stack with Private Registry Modules](#stack-with-private-registry-modules)
+3. [Multi-Environment Stack](#multi-environment-stack)
+4. [Multi-Region Stack](#multi-region-stack)
+5. [Linked Stacks (Cross-Stack Dependencies)](#linked-stacks-cross-stack-dependencies)
+6. [Multi-Cloud Stack](#multi-cloud-stack)
+7. [Complete AWS Production Stack](#complete-aws-production-stack)
 
 ## Simple Single-Region Stack
 
@@ -102,6 +103,267 @@ deployment "production" {
   }
 }
 ```
+
+## Stack with Private Registry Modules
+
+Example Stack using modules from a private HCP Terraform registry, combining both private and public registry sources.
+
+### File Structure
+```
+private-registry-stack/
+├── variables.tfcomponent.hcl
+├── providers.tfcomponent.hcl
+├── components.tfcomponent.hcl
+├── outputs.tfcomponent.hcl
+└── deployments.tfdeploy.hcl
+```
+
+### variables.tfcomponent.hcl
+```hcl
+variable "aws_region" {
+  type    = string
+  default = "us-west-2"
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+
+variable "vpc_cidr" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+
+variable "app_name" {
+  type = string
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+```
+
+### providers.tfcomponent.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+  random = {
+    source  = "hashicorp/random"
+    version = "~> 3.5.0"
+  }
+}
+
+provider "aws" "main" {
+  config {
+    region = var.aws_region
+
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+
+    default_tags {
+      tags = {
+        Environment = var.environment
+        ManagedBy   = "Terraform Stacks"
+        Application = var.app_name
+      }
+    }
+  }
+}
+
+provider "random" "main" {
+  config {}
+}
+```
+
+### components.tfcomponent.hcl
+```hcl
+locals {
+  name_prefix = "${var.app_name}-${var.environment}"
+  common_tags = {
+    Project     = var.app_name
+    Environment = var.environment
+  }
+}
+
+# Using a private registry module for VPC
+component "vpc" {
+  source  = "app.terraform.io/my-org/vpc/aws"
+  version = "2.1.0"
+
+  inputs = {
+    name_prefix         = local.name_prefix
+    cidr_block          = var.vpc_cidr
+    availability_zones  = ["${var.aws_region}a", "${var.aws_region}b", "${var.aws_region}c"]
+    enable_nat_gateway  = true
+    single_nat_gateway  = var.environment != "prod"
+    tags                = local.common_tags
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+
+# Using a private registry module for security groups
+component "security_groups" {
+  source  = "app.terraform.io/my-org/security-groups/aws"
+  version = "1.5.2"
+
+  inputs = {
+    vpc_id      = component.vpc.vpc_id
+    name_prefix = local.name_prefix
+    environment = var.environment
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+
+# Using a public registry module for RDS
+component "database" {
+  source  = "terraform-aws-modules/rds/aws"
+  version = "~> 6.0"
+
+  inputs = {
+    identifier           = "${local.name_prefix}-db"
+    engine               = "postgres"
+    engine_version       = "15.3"
+    family               = "postgres15"
+    major_engine_version = "15"
+    instance_class       = var.environment == "prod" ? "db.t3.large" : "db.t3.micro"
+
+    allocated_storage     = var.environment == "prod" ? 100 : 20
+    db_name               = replace(var.app_name, "-", "_")
+    username              = "dbadmin"
+    password              = var.db_password
+    port                  = 5432
+
+    db_subnet_group_name   = component.vpc.database_subnet_group_name
+    vpc_security_group_ids = [component.security_groups.database_sg_id]
+
+    backup_retention_period = var.environment == "prod" ? 30 : 7
+    skip_final_snapshot     = var.environment != "prod"
+    deletion_protection     = var.environment == "prod"
+
+    tags = local.common_tags
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+
+# Using a private registry module for application infrastructure
+component "application" {
+  source  = "app.terraform.io/my-org/ecs-application/aws"
+  version = "3.2.1"
+
+  inputs = {
+    name_prefix           = local.name_prefix
+    vpc_id                = component.vpc.vpc_id
+    private_subnet_ids    = component.vpc.private_subnet_ids
+    public_subnet_ids     = component.vpc.public_subnet_ids
+    app_security_group_id = component.security_groups.app_sg_id
+
+    container_image       = "my-org/my-app:latest"
+    container_port        = 8080
+    desired_count         = var.environment == "prod" ? 3 : 1
+
+    environment_variables = {
+      ENVIRONMENT    = var.environment
+      DATABASE_HOST  = component.database.db_instance_endpoint
+      DATABASE_NAME  = component.database.db_instance_name
+    }
+
+    tags = local.common_tags
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+```
+
+### outputs.tfcomponent.hcl
+```hcl
+output "vpc_id" {
+  type        = string
+  description = "VPC ID"
+  value       = component.vpc.vpc_id
+}
+
+output "application_url" {
+  type        = string
+  description = "Application load balancer URL"
+  value       = component.application.load_balancer_dns
+}
+
+output "database_endpoint" {
+  type        = string
+  description = "Database endpoint"
+  value       = component.database.db_instance_endpoint
+  sensitive   = true
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+}
+
+deployment "development" {
+  inputs = {
+    aws_region     = "us-west-2"
+    environment    = "dev"
+    app_name       = "myapp"
+    vpc_cidr       = "10.0.0.0/16"
+    db_password    = "dev-password-change-me"
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment "production" {
+  inputs = {
+    aws_region     = "us-east-1"
+    environment    = "prod"
+    app_name       = "myapp"
+    vpc_cidr       = "10.1.0.0/16"
+    db_password    = "prod-password-use-secrets-manager"
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+```
+
+### Key Points
+
+- **Private registry modules** use the format `app.terraform.io/<org>/<module>/<provider>`
+- **Version constraints** ensure consistent module versions across environments
+- **Mixed sources**: Combining private registry modules (VPC, security groups, application) with public registry modules (RDS)
+- **Authentication**: HCP Terraform workspaces automatically authenticate to private registries; CLI users need credentials configured
+- **Terraform Enterprise**: Replace `app.terraform.io` with your instance hostname
 
 ## Multi-Environment Stack
 
