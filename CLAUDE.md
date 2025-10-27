@@ -75,6 +75,21 @@ Terraform Stacks use a **separate HCL-based language** distinct from traditional
 - Outputs and variables require `type` argument
 - All files must be at root level (processed in dependency order)
 
+### Component Module Sources
+
+Components can reference modules from multiple source types:
+
+- **Local paths**: `./modules/vpc` or `../shared-modules/networking`
+- **Public registry**: `terraform-aws-modules/vpc/aws` (format: `<NAMESPACE>/<NAME>/<PROVIDER>`)
+- **Private registry**: `app.terraform.io/my-org/vpc/aws` (format: `<HOSTNAME>/<ORG>/<MODULE>/<PROVIDER>`)
+  - HCP Terraform SaaS: Use `app.terraform.io`
+  - Terraform Enterprise: Use your instance hostname
+  - Generic hostname: Use `localterraform.com` for multi-instance deployments
+- **Git repositories**: `git::https://github.com/org/repo.git//modules/vpc?ref=v1.0.0`
+- **HTTP/HTTPS archives**: `https://example.com/modules/vpc.tar.gz`
+
+The `version` argument is supported only for registry sources (public and private). See [references/component-blocks.md](references/component-blocks.md) for complete details.
+
 ### Critical Architecture Points
 
 1. **Components are abstractions around modules** - Each component specifies a source module, inputs, and providers
