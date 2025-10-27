@@ -1,0 +1,1100 @@
+# Terraform Stacks Complete Examples
+
+Complete, working examples for common Terraform Stacks scenarios.
+
+## Table of Contents
+
+1. [Simple Single-Region Stack](#simple-single-region-stack)
+2. [Multi-Environment Stack](#multi-environment-stack)
+3. [Multi-Region Stack](#multi-region-stack)
+4. [Linked Stacks (Cross-Stack Dependencies)](#linked-stacks-cross-stack-dependencies)
+5. [Multi-Cloud Stack](#multi-cloud-stack)
+6. [Complete AWS Production Stack](#complete-aws-production-stack)
+
+## Simple Single-Region Stack
+
+Basic Stack with a single environment deployment.
+
+### File Structure
+```
+simple-stack/
+├── variables.tfstack.hcl
+├── providers.tfstack.hcl
+├── components.tfstack.hcl
+├── deployments.tfdeploy.hcl
+└── modules/
+    └── webapp/
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
+```
+
+### variables.tfstack.hcl
+```hcl
+variable "aws_region" {
+  type    = string
+  default = "us-west-1"
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+
+variable "app_name" {
+  type = string
+}
+```
+
+### providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+}
+
+provider "aws" "main" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+  }
+}
+```
+
+### components.tfstack.hcl
+```hcl
+component "webapp" {
+  source = "./modules/webapp"
+  
+  inputs = {
+    app_name = var.app_name
+    region   = var.aws_region
+  }
+  
+  providers = {
+    aws = provider.aws.main
+  }
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+deployment "production" {
+  inputs = {
+    aws_region     = "us-west-1"
+    app_name       = "my-webapp"
+    role_arn       = "arn:aws:iam::123456789012:role/terraform-stacks"
+    identity_token = identity_token.aws.jwt
+  }
+}
+```
+
+## Multi-Environment Stack
+
+Stack with development, staging, and production deployments.
+
+### variables.tfstack.hcl
+```hcl
+variable "aws_region" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "instance_count" {
+  type = number
+}
+
+variable "instance_type" {
+  type = string
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+```
+
+### providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+}
+
+provider "aws" "this" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+    
+    default_tags {
+      tags = {
+        Environment = var.environment
+        ManagedBy   = "Terraform Stacks"
+      }
+    }
+  }
+}
+```
+
+### components.tfstack.hcl
+```hcl
+locals {
+  name_prefix = "myapp-${var.environment}"
+}
+
+component "vpc" {
+  source = "./modules/vpc"
+  
+  inputs = {
+    name_prefix = local.name_prefix
+    cidr_block  = "10.0.0.0/16"
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "compute" {
+  source = "./modules/compute"
+  
+  inputs = {
+    name_prefix    = local.name_prefix
+    vpc_id         = component.vpc.vpc_id
+    subnet_ids     = component.vpc.private_subnet_ids
+    instance_count = var.instance_count
+    instance_type  = var.instance_type
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+```
+
+### outputs.tfstack.hcl
+```hcl
+output "vpc_id" {
+  type  = string
+  value = component.vpc.vpc_id
+}
+
+output "load_balancer_url" {
+  type  = string
+  value = component.compute.load_balancer_url
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+  
+  environments = {
+    dev = {
+      region         = "us-east-1"
+      instance_count = 1
+      instance_type  = "t3.micro"
+    }
+    staging = {
+      region         = "us-west-1"
+      instance_count = 2
+      instance_type  = "t3.small"
+    }
+    prod = {
+      region         = "us-west-1"
+      instance_count = 5
+      instance_type  = "t3.large"
+    }
+  }
+}
+
+deployment "development" {
+  inputs = {
+    aws_region     = local.environments.dev.region
+    environment    = "dev"
+    instance_count = local.environments.dev.instance_count
+    instance_type  = local.environments.dev.instance_type
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment "staging" {
+  inputs = {
+    aws_region     = local.environments.staging.region
+    environment    = "staging"
+    instance_count = local.environments.staging.instance_count
+    instance_type  = local.environments.staging.instance_type
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment "production" {
+  inputs = {
+    aws_region     = local.environments.prod.region
+    environment    = "prod"
+    instance_count = local.environments.prod.instance_count
+    instance_type  = local.environments.prod.instance_type
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+# Deployment groups
+deployment_group "development" {
+  deployments = [deployment.development]
+}
+
+deployment_group "non_production" {
+  deployments = [deployment.staging]
+}
+
+# Auto-approve dev deployments
+deployment_auto_approve "dev_auto" {
+  deployment_group = deployment_group.development
+  
+  check {
+    condition = context.plan.applyable
+    reason    = "Development plans must be applyable"
+  }
+}
+```
+
+## Multi-Region Stack
+
+Stack that deploys identical infrastructure across multiple AWS regions.
+
+### variables.tfstack.hcl
+```hcl
+variable "regions" {
+  type = set(string)
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+
+variable "app_name" {
+  type = string
+}
+```
+
+### providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+}
+
+provider "aws" "regional" {
+  for_each = var.regions
+  
+  config {
+    region = each.value
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+    
+    default_tags {
+      tags = {
+        Region    = each.value
+        ManagedBy = "Terraform Stacks"
+        AppName   = var.app_name
+      }
+    }
+  }
+}
+```
+
+### components.tfstack.hcl
+```hcl
+component "regional_infrastructure" {
+  for_each = var.regions
+  
+  source = "./modules/regional-infra"
+  
+  inputs = {
+    region      = each.value
+    app_name    = var.app_name
+    name_suffix = each.value
+  }
+  
+  providers = {
+    aws = provider.aws.regional[each.value]
+  }
+}
+
+component "global_route53" {
+  source = "./modules/route53"
+  
+  inputs = {
+    app_name     = var.app_name
+    domain_name  = "example.com"
+    regional_lbs = {
+      for region, comp in component.regional_infrastructure :
+      region => comp.load_balancer_dns
+    }
+  }
+  
+  # Use one region's provider for global resources
+  providers = {
+    aws = provider.aws.regional["us-west-1"]
+  }
+}
+```
+
+### outputs.tfstack.hcl
+```hcl
+output "regional_endpoints" {
+  type = map(string)
+  value = {
+    for region, comp in component.regional_infrastructure :
+    region => comp.load_balancer_url
+  }
+}
+
+output "global_domain" {
+  type  = string
+  value = component.global_route53.domain_name
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  regions = ["us-west-1", "us-east-1", "eu-west-1"]
+}
+
+deployment "multi_region_prod" {
+  inputs = {
+    regions        = toset(local.regions)
+    app_name       = "my-global-app"
+    role_arn       = "arn:aws:iam::123456789012:role/terraform-stacks"
+    identity_token = identity_token.aws.jwt
+  }
+}
+```
+
+## Linked Stacks (Cross-Stack Dependencies)
+
+Two Stacks where the application Stack depends on the network Stack.
+
+### Network Stack
+
+#### network-stack/variables.tfstack.hcl
+```hcl
+variable "vpc_cidr" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "aws_region" {
+  type = string
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+```
+
+#### network-stack/providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+}
+
+provider "aws" "this" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+  }
+}
+```
+
+#### network-stack/components.tfstack.hcl
+```hcl
+component "vpc" {
+  source = "./modules/vpc"
+  
+  inputs = {
+    cidr_block  = var.vpc_cidr
+    environment = var.environment
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "security_groups" {
+  source = "./modules/security-groups"
+  
+  inputs = {
+    vpc_id      = component.vpc.vpc_id
+    environment = var.environment
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+```
+
+#### network-stack/outputs.tfstack.hcl
+```hcl
+output "vpc_id" {
+  type  = string
+  value = component.vpc.vpc_id
+}
+
+output "private_subnet_ids" {
+  type  = list(string)
+  value = component.vpc.private_subnet_ids
+}
+
+output "public_subnet_ids" {
+  type  = list(string)
+  value = component.vpc.public_subnet_ids
+}
+
+output "app_security_group_id" {
+  type  = string
+  value = component.security_groups.app_sg_id
+}
+```
+
+#### network-stack/deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+}
+
+deployment "network" {
+  inputs = {
+    aws_region     = "us-west-1"
+    environment    = "production"
+    vpc_cidr       = "10.0.0.0/16"
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+# Publish outputs for other stacks
+publish_output "vpc_id_network" {
+  type  = string
+  value = deployment.network.vpc_id
+}
+
+publish_output "private_subnet_ids" {
+  type  = list(string)
+  value = deployment.network.private_subnet_ids
+}
+
+publish_output "public_subnet_ids" {
+  type  = list(string)
+  value = deployment.network.public_subnet_ids
+}
+
+publish_output "app_security_group_id" {
+  type  = string
+  value = deployment.network.app_security_group_id
+}
+```
+
+### Application Stack
+
+#### application-stack/variables.tfstack.hcl
+```hcl
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
+variable "security_group_id" {
+  type = string
+}
+
+variable "instance_count" {
+  type = number
+}
+
+variable "aws_region" {
+  type = string
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+```
+
+#### application-stack/providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+}
+
+provider "aws" "this" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+  }
+}
+```
+
+#### application-stack/components.tfstack.hcl
+```hcl
+component "application" {
+  source = "./modules/app"
+  
+  inputs = {
+    vpc_id            = var.vpc_id
+    subnet_ids        = var.subnet_ids
+    security_group_id = var.security_group_id
+    instance_count    = var.instance_count
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+```
+
+#### application-stack/deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+# Reference the network stack
+upstream_input "network" {
+  type   = "stack"
+  source = "app.terraform.io/my-org/my-project/network-stack"
+}
+
+deployment "application" {
+  inputs = {
+    aws_region        = "us-west-1"
+    vpc_id            = upstream_input.network.vpc_id_network
+    subnet_ids        = upstream_input.network.private_subnet_ids
+    security_group_id = upstream_input.network.app_security_group_id
+    instance_count    = 3
+    role_arn          = "arn:aws:iam::123456789012:role/terraform-stacks"
+    identity_token    = identity_token.aws.jwt
+  }
+}
+```
+
+## Multi-Cloud Stack
+
+Stack that deploys to both AWS and Azure.
+
+### variables.tfstack.hcl
+```hcl
+variable "aws_region" {
+  type = string
+}
+
+variable "azure_location" {
+  type = string
+}
+
+variable "aws_identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "aws_role_arn" {
+  type = string
+}
+
+variable "azure_identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "azure_subscription_id" {
+  type = string
+}
+
+variable "azure_tenant_id" {
+  type = string
+}
+
+variable "azure_client_id" {
+  type = string
+}
+
+variable "app_name" {
+  type = string
+}
+```
+
+### providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+  azurerm = {
+    source  = "hashicorp/azurerm"
+    version = "~> 3.0"
+  }
+}
+
+provider "aws" "this" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.aws_role_arn
+      web_identity_token = var.aws_identity_token
+    }
+  }
+}
+
+provider "azurerm" "this" {
+  config {
+    features {}
+    
+    subscription_id = var.azure_subscription_id
+    tenant_id       = var.azure_tenant_id
+    client_id       = var.azure_client_id
+    
+    use_oidc = true
+    oidc_token = var.azure_identity_token
+  }
+}
+```
+
+### components.tfstack.hcl
+```hcl
+component "aws_infrastructure" {
+  source = "./modules/aws-infra"
+  
+  inputs = {
+    region   = var.aws_region
+    app_name = var.app_name
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "azure_infrastructure" {
+  source = "./modules/azure-infra"
+  
+  inputs = {
+    location = var.azure_location
+    app_name = var.app_name
+  }
+  
+  providers = {
+    azurerm = provider.azurerm.this
+  }
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+identity_token "azure" {
+  audience = ["api://AzureADTokenExchange"]
+}
+
+deployment "multi_cloud" {
+  inputs = {
+    aws_region             = "us-west-1"
+    azure_location         = "westus2"
+    app_name               = "my-multi-cloud-app"
+    aws_role_arn           = "arn:aws:iam::123456789012:role/terraform-stacks"
+    aws_identity_token     = identity_token.aws.jwt
+    azure_subscription_id  = "12345678-1234-1234-1234-123456789012"
+    azure_tenant_id        = "87654321-4321-4321-4321-210987654321"
+    azure_client_id        = "11111111-1111-1111-1111-111111111111"
+    azure_identity_token   = identity_token.azure.jwt
+  }
+}
+```
+
+## Complete AWS Production Stack
+
+Full production-grade Stack with VPC, RDS, ECS, and monitoring.
+
+### variables.tfstack.hcl
+```hcl
+variable "aws_region" {
+  type        = string
+  description = "AWS region"
+}
+
+variable "environment" {
+  type        = string
+  description = "Environment name"
+}
+
+variable "vpc_cidr" {
+  type        = string
+  description = "VPC CIDR block"
+}
+
+variable "app_name" {
+  type        = string
+  description = "Application name"
+}
+
+variable "db_instance_class" {
+  type        = string
+  description = "RDS instance class"
+}
+
+variable "ecs_desired_count" {
+  type        = number
+  description = "Desired ECS task count"
+}
+
+variable "identity_token" {
+  type      = string
+  ephemeral = true
+}
+
+variable "role_arn" {
+  type = string
+}
+```
+
+### providers.tfstack.hcl
+```hcl
+required_providers {
+  aws = {
+    source  = "hashicorp/aws"
+    version = "~> 5.7.0"
+  }
+  random = {
+    source  = "hashicorp/random"
+    version = "~> 3.5.0"
+  }
+}
+
+provider "aws" "this" {
+  config {
+    region = var.aws_region
+    
+    assume_role_with_web_identity {
+      role_arn           = var.role_arn
+      web_identity_token = var.identity_token
+    }
+    
+    default_tags {
+      tags = {
+        Environment = var.environment
+        Application = var.app_name
+        ManagedBy   = "Terraform Stacks"
+      }
+    }
+  }
+}
+
+provider "random" "this" {
+  config {}
+}
+```
+
+### components.tfstack.hcl
+```hcl
+locals {
+  name_prefix = "${var.app_name}-${var.environment}"
+}
+
+component "vpc" {
+  source = "./modules/vpc"
+  
+  inputs = {
+    name_prefix = local.name_prefix
+    cidr_block  = var.vpc_cidr
+    azs_count   = 3
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "security_groups" {
+  source = "./modules/security-groups"
+  
+  inputs = {
+    name_prefix = local.name_prefix
+    vpc_id      = component.vpc.vpc_id
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "rds" {
+  source = "./modules/rds"
+  
+  inputs = {
+    name_prefix        = local.name_prefix
+    instance_class     = var.db_instance_class
+    subnet_ids         = component.vpc.private_subnet_ids
+    security_group_ids = [component.security_groups.database_sg_id]
+  }
+  
+  providers = {
+    aws    = provider.aws.this
+    random = provider.random.this
+  }
+}
+
+component "ecs_cluster" {
+  source = "./modules/ecs-cluster"
+  
+  inputs = {
+    name_prefix = local.name_prefix
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "ecs_service" {
+  source = "./modules/ecs-service"
+  
+  inputs = {
+    name_prefix      = local.name_prefix
+    cluster_id       = component.ecs_cluster.cluster_id
+    desired_count    = var.ecs_desired_count
+    subnet_ids       = component.vpc.private_subnet_ids
+    security_group_id = component.security_groups.app_sg_id
+    database_endpoint = component.rds.endpoint
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "alb" {
+  source = "./modules/alb"
+  
+  inputs = {
+    name_prefix       = local.name_prefix
+    vpc_id            = component.vpc.vpc_id
+    subnet_ids        = component.vpc.public_subnet_ids
+    security_group_id = component.security_groups.alb_sg_id
+    target_group_arn  = component.ecs_service.target_group_arn
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "cloudwatch" {
+  source = "./modules/cloudwatch"
+  
+  inputs = {
+    name_prefix  = local.name_prefix
+    cluster_name = component.ecs_cluster.cluster_name
+    service_name = component.ecs_service.service_name
+  }
+  
+  providers = {
+    aws = provider.aws.this
+  }
+}
+```
+
+### outputs.tfstack.hcl
+```hcl
+output "load_balancer_url" {
+  type        = string
+  description = "Application load balancer URL"
+  value       = component.alb.dns_name
+}
+
+output "database_endpoint" {
+  type        = string
+  description = "RDS endpoint"
+  value       = component.rds.endpoint
+  sensitive   = true
+}
+
+output "vpc_id" {
+  type  = string
+  value = component.vpc.vpc_id
+}
+
+output "ecs_cluster_name" {
+  type  = string
+  value = component.ecs_cluster.cluster_name
+}
+```
+
+### deployments.tfdeploy.hcl
+```hcl
+identity_token "aws" {
+  audience = ["aws.workload.identity"]
+}
+
+locals {
+  role_arn = "arn:aws:iam::123456789012:role/terraform-stacks"
+}
+
+deployment "staging" {
+  inputs = {
+    aws_region        = "us-west-1"
+    environment       = "staging"
+    app_name          = "myapp"
+    vpc_cidr          = "10.1.0.0/16"
+    db_instance_class = "db.t3.small"
+    ecs_desired_count = 2
+    role_arn          = local.role_arn
+    identity_token    = identity_token.aws.jwt
+  }
+}
+
+deployment "production" {
+  inputs = {
+    aws_region        = "us-west-1"
+    environment       = "production"
+    app_name          = "myapp"
+    vpc_cidr          = "10.0.0.0/16"
+    db_instance_class = "db.r5.large"
+    ecs_desired_count = 5
+    role_arn          = local.role_arn
+    identity_token    = identity_token.aws.jwt
+  }
+}
+
+# Deployment groups
+deployment_group "staging" {
+  deployments = [deployment.staging]
+}
+
+deployment_group "production" {
+  deployments = [deployment.production]
+}
+
+# Auto-approve staging with safety checks
+deployment_auto_approve "staging_safe" {
+  deployment_group = deployment_group.staging
+  
+  check {
+    condition = context.plan.changes.remove == 0
+    reason    = "Cannot auto-approve deletions in staging"
+  }
+  
+  check {
+    condition = context.plan.applyable
+    reason    = "Plan must be applyable"
+  }
+}
+```
+
+## Testing Configurations
+
+### Validate Stack Configuration
+```bash
+terraform stacks providers lock
+terraform stacks validate
+```
+
+### Plan Specific Deployment
+```bash
+terraform stacks plan --deployment=development
+terraform stacks plan --deployment=production
+```
+
+### Apply Deployment
+```bash
+terraform stacks apply --deployment=staging
+```
