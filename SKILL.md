@@ -126,15 +126,35 @@ provider "aws" "configurations" {
 
 Each Stack requires at least one component block. Add a component for each module to include in the Stack.
 
+**Component Source Types:**
+- Local file paths: `./modules/vpc`
+- Public registry: `terraform-aws-modules/vpc/aws`
+- Private registry: `app.terraform.io/my-org/vpc/aws`
+- Git repositories: `git::https://github.com/org/repo.git//modules/vpc?ref=v1.0.0`
+
 ```hcl
 component "vpc" {
   source = "./modules/vpc"
-  
+
   inputs = {
     cidr_block  = var.vpc_cidr
     name_prefix = var.name_prefix
   }
-  
+
+  providers = {
+    aws = provider.aws.this
+  }
+}
+
+component "networking" {
+  source  = "app.terraform.io/my-org/vpc/aws"
+  version = "2.1.0"
+
+  inputs = {
+    cidr_block  = var.vpc_cidr
+    environment = var.environment
+  }
+
   providers = {
     aws = provider.aws.this
   }
@@ -142,13 +162,13 @@ component "vpc" {
 
 component "compute" {
   source = "./modules/compute"
-  
+
   inputs = {
     vpc_id          = component.vpc.vpc_id
     subnet_ids      = component.vpc.private_subnet_ids
     instance_type   = var.instance_type
   }
-  
+
   providers = {
     aws = provider.aws.this
   }

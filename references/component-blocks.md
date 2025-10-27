@@ -242,9 +242,70 @@ component "<component_name>" {
 
 - **component_name** (label, required): Unique identifier for this component
 - **for_each** (optional): Create multiple component instances
-- **source** (required): Module source (local path or registry)
+- **source** (required): Module source (see [Source Argument](#source-argument) below)
+- **version** (optional): Version constraint for registry-based sources only
 - **inputs** (required): Map of input variables for the module
 - **providers** (required): Map of provider configurations
+
+### Source Argument
+
+The `source` argument accepts the same module sources as traditional Terraform configurations.
+
+**Local File Path:**
+```hcl
+source = "./modules/vpc"
+source = "../shared-modules/networking"
+```
+
+**Public Terraform Registry:**
+```hcl
+source = "terraform-aws-modules/vpc/aws"
+source = "hashicorp/consul/aws"
+```
+Format: `<NAMESPACE>/<NAME>/<PROVIDER>`
+
+**Private HCP Terraform Registry:**
+```hcl
+source = "app.terraform.io/my-org/vpc/aws"
+source = "app.terraform.io/example-corp/networking/azurerm"
+```
+Format: `<HOSTNAME>/<ORGANIZATION>/<MODULE_NAME>/<PROVIDER_NAME>`
+
+- **HCP Terraform (SaaS)**: Use hostname `app.terraform.io`
+- **Terraform Enterprise**: Use your instance hostname (e.g., `terraform.mycompany.com`)
+- **Generic hostname**: Use `localterraform.com` for deployments spanning multiple Terraform Enterprise instances
+
+**Git Repository:**
+```hcl
+source = "git::https://github.com/org/repo.git//modules/vpc?ref=v1.0.0"
+source = "git::ssh://git@github.com/org/repo.git//modules/vpc?ref=main"
+```
+
+**HTTP/HTTPS Archive:**
+```hcl
+source = "https://example.com/modules/vpc-module.tar.gz"
+```
+
+### Version Argument
+
+The `version` argument is supported only for registry-based sources (public and private registries). Local file paths and Git sources do not support the `version` argument.
+
+```hcl
+component "vpc" {
+  source  = "app.terraform.io/my-org/vpc/aws"
+  version = "~> 2.0"  # Semantic versioning constraint
+
+  inputs = {
+    cidr_block = var.vpc_cidr
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+```
+
+**Note**: Modules sourced from local file paths always share the same version as their caller and cannot have independent version constraints.
 
 ### Component References
 
@@ -254,17 +315,56 @@ For components with `for_each`: `component.<name>[<key>].<output>`
 
 ### Examples
 
-**Basic Component:**
+**Basic Component (Local Module):**
 
 ```hcl
 component "vpc" {
   source = "./modules/vpc"
-  
+
   inputs = {
     cidr_block  = var.vpc_cidr
     name_prefix = var.name_prefix
   }
-  
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+```
+
+**Component from Public Registry:**
+
+```hcl
+component "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  inputs = {
+    cidr            = var.vpc_cidr
+    azs             = var.availability_zones
+    private_subnets = var.private_subnet_cidrs
+    public_subnets  = var.public_subnet_cidrs
+  }
+
+  providers = {
+    aws = provider.aws.main
+  }
+}
+```
+
+**Component from Private Registry:**
+
+```hcl
+component "vpc" {
+  source  = "app.terraform.io/my-org/vpc/aws"
+  version = "2.1.0"
+
+  inputs = {
+    cidr_block  = var.vpc_cidr
+    name_prefix = var.name_prefix
+    environment = var.environment
+  }
+
   providers = {
     aws = provider.aws.main
   }
