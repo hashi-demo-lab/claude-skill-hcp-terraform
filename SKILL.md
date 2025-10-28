@@ -451,7 +451,7 @@ deployment "application" {
 Generate provider lock file:
 
 ```bash
-terraform stacks providers lock
+terraform stacks providers-lock
 ```
 
 Validate Stack configuration:
