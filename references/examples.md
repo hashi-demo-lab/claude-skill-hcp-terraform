@@ -103,6 +103,11 @@ deployment "production" {
     identity_token = identity_token.aws.jwt
   }
 }
+
+# Deployment groups
+deployment_group "production" {
+  deployments = [deployment.production]
+}
 ```
 
 ## Stack with Private Registry Modules
@@ -356,6 +361,15 @@ deployment "production" {
     identity_token = identity_token.aws.jwt
   }
 }
+
+# Deployment groups
+deployment_group "development" {
+  deployments = [deployment.development]
+}
+
+deployment_group "production" {
+  deployments = [deployment.production]
+}
 ```
 
 ### Key Points
@@ -545,10 +559,14 @@ deployment_group "non_production" {
   deployments = [deployment.staging]
 }
 
+deployment_group "production" {
+  deployments = [deployment.production]
+}
+
 # Auto-approve dev deployments
 deployment_auto_approve "dev_auto" {
   deployment_group = deployment_group.development
-  
+
   check {
     condition = context.plan.applyable
     reason    = "Development plans must be applyable"
@@ -681,6 +699,11 @@ deployment "multi_region_prod" {
     role_arn       = "arn:aws:iam::123456789012:role/terraform-stacks"
     identity_token = identity_token.aws.jwt
   }
+}
+
+# Deployment groups
+deployment_group "production" {
+  deployments = [deployment.multi_region_prod]
 }
 ```
 
@@ -827,6 +850,11 @@ publish_output "app_security_group_id" {
   type  = string
   value = deployment.network.app_security_group_id
 }
+
+# Deployment groups
+deployment_group "network" {
+  deployments = [deployment.network]
+}
 ```
 
 ### Application Stack
@@ -924,6 +952,11 @@ deployment "application" {
     role_arn          = "arn:aws:iam::123456789012:role/terraform-stacks"
     identity_token    = identity_token.aws.jwt
   }
+}
+
+# Deployment groups
+deployment_group "application" {
+  deployments = [deployment.application]
 }
 ```
 
@@ -1061,6 +1094,11 @@ deployment "multi_cloud" {
     azure_client_id        = "11111111-1111-1111-1111-111111111111"
     azure_identity_token   = identity_token.azure.jwt
   }
+}
+
+# Deployment groups
+deployment_group "multi_cloud" {
+  deployments = [deployment.multi_cloud]
 }
 ```
 
@@ -1330,12 +1368,12 @@ deployment_group "production" {
 # Auto-approve staging with safety checks
 deployment_auto_approve "staging_safe" {
   deployment_group = deployment_group.staging
-  
+
   check {
     condition = context.plan.changes.remove == 0
     reason    = "Cannot auto-approve deletions in staging"
   }
-  
+
   check {
     condition = context.plan.applyable
     reason    = "Plan must be applyable"
@@ -1415,6 +1453,15 @@ deployment "production" {
     identity_token = identity_token.aws.jwt
   }
 }
+
+# Deployment groups
+deployment_group "staging" {
+  deployments = [deployment.staging]
+}
+
+deployment_group "production" {
+  deployments = [deployment.production]
+}
 ```
 
 ### Step 2: Plan and Apply
@@ -1462,6 +1509,15 @@ deployment "production" {
     role_arn       = local.role_arn
     identity_token = identity_token.aws.jwt
   }
+}
+
+# Deployment groups
+deployment_group "staging" {
+  deployments = [deployment.staging]
+}
+
+deployment_group "production" {
+  deployments = [deployment.production]
 }
 ```
 

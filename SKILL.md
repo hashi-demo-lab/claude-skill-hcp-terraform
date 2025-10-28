@@ -355,7 +355,7 @@ After applying the plan and the deployment is destroyed, remove the deployment b
 
 ### Deployment Group Block
 
-Group deployments together to configure shared settings (Premium feature):
+Group deployments together to configure shared settings (Premium feature). **Best Practice**: Always create deployment groups for all deployments, even single deployments, to enable future auto-approval rules and maintain consistent configuration patterns.
 
 ```hcl
 deployment_group "canary" {
@@ -539,7 +539,7 @@ component "database" {
 4. **Input Variables**: Use variables for values that differ across deployments; use locals for shared values
 5. **Provider Lock Files**: Always generate and commit `.terraform.lock.hcl` to version control
 6. **Naming Conventions**: Use descriptive names for components and deployments
-7. **Deployment Groups**: Use deployment groups (Premium) to organize deployments and configure shared auto-approval rules
+7. **Deployment Groups**: Always organize deployments into deployment groups, even if you only have one deployment. Deployment groups enable auto-approval rules, logical organization, and provide a foundation for scaling. While deployment groups are a Premium feature, organizing your configurations to use them is a best practice for all Stacks
 8. **Testing**: Test Stack configurations in dev/staging deployments before production
 
 ## Troubleshooting

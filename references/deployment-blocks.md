@@ -314,6 +314,8 @@ deployment "prod" {
 
 Groups deployments together to configure shared settings and auto-approval rules (HCP Terraform Premium feature).
 
+**Best Practice**: Always create deployment groups for all deployments, even when you have only a single deployment. This establishes a consistent configuration pattern, enables future auto-approval rules, and provides a foundation for scaling your Stack.
+
 ### Syntax
 
 ```hcl
@@ -333,10 +335,28 @@ Deployment groups allow you to:
 - Organize deployments logically (by environment, team, region, etc.)
 - Configure shared auto-approval rules for multiple deployments
 - Manage deployments more effectively at scale
+- Establish consistent configuration patterns across all Stacks
 
 ### Examples
 
-**Basic Deployment Group:**
+**Single Deployment Group (Best Practice):**
+
+```hcl
+deployment "production" {
+  inputs = {
+    aws_region     = "us-west-1"
+    instance_count = 5
+    role_arn       = local.role_arn
+    identity_token = identity_token.aws.jwt
+  }
+}
+
+deployment_group "production" {
+  deployments = [deployment.production]
+}
+```
+
+**Multiple Deployment Groups:**
 
 ```hcl
 deployment_group "non_production" {
