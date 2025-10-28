@@ -13,14 +13,14 @@ This is a **Claude Skill repository** for HashiCorp Terraform Stacks - a special
 ```
 claude-skill-terraform-stacks/
 ├── README.md                         # Brief project description (2 lines)
-├── SKILL.md                          # Main comprehensive guide (542 lines)
+├── SKILL.md                          # Main comprehensive guide (580 lines)
 └── references/                       # Detailed reference documentation
-    ├── component-blocks.md           # Component block specification (549 lines)
-    ├── deployment-blocks.md          # Deployment block specification (963 lines)
-    └── examples.md                   # Complete working examples (1100 lines)
+    ├── component-blocks.md           # Component block specification (649 lines)
+    ├── deployment-blocks.md          # Deployment block specification (1009 lines)
+    └── examples.md                   # Complete working examples (1529 lines)
 ```
 
-Total: 3,156 lines of documentation organized into focused modules.
+Total: 3,767 lines of documentation organized into focused modules.
 
 ## Documentation Architecture
 
@@ -56,12 +56,14 @@ Total: 3,156 lines of documentation organized into focused modules.
 - Cloud provider-specific configurations (AWS, Azure, GCP)
 
 **references/examples.md covers**:
-- Simple single-region Stack
-- Multi-environment Stack (dev/staging/prod)
+- Simple single-region Stack (with deployment group)
+- Stack with private registry modules
+- Multi-environment Stack (dev/staging/prod with deployment groups)
 - Multi-region Stack with regional provider configurations
 - Linked Stacks with cross-stack dependencies
 - Multi-cloud Stack (AWS + Azure)
 - Complete AWS production Stack with all features
+- Destroying deployments safely
 
 ## Key Terraform Stacks Concepts
 
@@ -97,6 +99,7 @@ The `version` argument is supported only for registry sources (public and privat
 3. **Each deployment has isolated state** - No shared state between deployments
 4. **Dependencies are auto-inferred** - When components reference other component outputs
 5. **Provider configurations support `for_each`** - Enable multi-region patterns with single configuration
+6. **Deployment groups are essential** - Always organize deployments into deployment groups, even single deployments. This enables auto-approval rules, maintains consistency, and provides a foundation for scaling
 
 ## Common Scenarios and Patterns
 
@@ -114,7 +117,10 @@ See SKILL.md lines 442-476 for the complete pattern.
 Guide them to create:
 - Multiple deployment blocks (one per environment)
 - Each deployment gets its own inputs and isolated state
-- Use deployment groups to organize related deployments
+- **Always create deployment groups** to organize deployments (even for single deployments)
+- Deployment groups enable auto-approval rules and provide consistent configuration patterns
+
+**Best Practice**: Every deployment should be organized into a deployment group, even if it's the only deployment in the Stack. This establishes a consistent pattern and enables future scaling.
 
 See references/examples.md for multi-environment example.
 
@@ -197,6 +203,7 @@ When updating documentation:
 2. **Update examples when syntax changes** - All code examples must remain valid and working
 3. **Keep the architecture accurate** - The "big picture" concepts in SKILL.md must align with detailed specs in references/
 4. **Test HCL syntax accuracy** - Ensure all code blocks use correct Terraform Stacks HCL syntax (not regular Terraform)
+5. **Include deployment groups in all examples** - Every example with deployments must include corresponding deployment_group blocks, even for single deployments
 
 ### Version Control
 
