@@ -350,7 +350,23 @@ run "test_custom_condition_failure" {
 
 ### Module Block
 
-Test a specific module rather than the root configuration. **Important**: Terraform test files only support **local** and **registry** modules.
+Test a specific module rather than the root configuration.
+
+**Supported Module Sources:**
+- ✅ **Local modules**: `./modules/vpc`, `../shared/networking`
+- ✅ **Public Terraform Registry**: `terraform-aws-modules/vpc/aws`
+- ✅ **Private Registry (HCP Terraform)**: `app.terraform.io/org/module/provider`
+
+**Unsupported Module Sources:**
+- ❌ Git repositories: `git::https://github.com/...`
+- ❌ HTTP URLs: `https://example.com/module.zip`
+- ❌ Other remote sources (S3, GCS, etc.)
+
+**Module Block Attributes:**
+- `source` - Module source (local path or registry address)
+- `version` - Version constraint (only for registry modules)
+
+**Testing Local Modules:**
 
 ```hcl
 run "test_vpc_module" {
@@ -372,7 +388,7 @@ run "test_vpc_module" {
 }
 ```
 
-**Testing Registry Modules:**
+**Testing Public Registry Modules:**
 
 ```hcl
 run "test_registry_module" {
