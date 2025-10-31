@@ -1269,6 +1269,338 @@ run "integration_test_vpc_creation" {
 }
 ```
 
+```hcl
+# tests/vpc_module_mock_test.tftest.hcl
+# This file demonstrates mock provider testing - fastest option, no credentials needed
+
+# ============================================================================
+# MOCK TESTS (Plan Mode with Mocks) - No real infrastructure or API calls
+# ============================================================================
+# Mock tests are ideal for:
+# - Testing complex logic without cloud costs
+# - Running tests without provider credentials
+# - Fast feedback in local development
+# - CI/CD pipelines without cloud access
+# - Testing with predictable data source results
+
+# Define mock provider to simulate AWS behavior
+mock_provider "aws" {
+  # Mock EC2 instances - returns these values instead of creating real resources
+  mock_resource "aws_instance" {
+    defaults = {
+      id                          = "i-1234567890abcdef0"
+      arn                         = "arn:aws:ec2:us-west-2:123456789012:instance/i-1234567890abcdef0"
+      instance_type               = "t2.micro"
+      ami                         = "ami-12345678"
+      availability_zone           = "us-west-2a"
+      subnet_id                   = "subnet-12345678"
+      vpc_security_group_ids      = ["sg-12345678"]
+      associate_public_ip_address = true
+      public_ip                   = "203.0.113.1"
+      private_ip                  = "10.0.1.100"
+      tags                        = {}
+    }
+  }
+
+  # Mock VPC resources
+  mock_resource "aws_vpc" {
+    defaults = {
+      id                       = "vpc-12345678"
+      arn                      = "arn:aws:ec2:us-west-2:123456789012:vpc/vpc-12345678"
+      cidr_block              = "10.0.0.0/16"
+      enable_dns_hostnames    = true
+      enable_dns_support      = true
+      instance_tenancy        = "default"
+      tags                    = {}
+    }
+  }
+
+  # Mock subnet resources
+  mock_resource "aws_subnet" {
+    defaults = {
+      id                      = "subnet-12345678"
+      arn                     = "arn:aws:ec2:us-west-2:123456789012:subnet/subnet-12345678"
+      vpc_id                  = "vpc-12345678"
+      cidr_block             = "10.0.1.0/24"
+      availability_zone       = "us-west-2a"
+      map_public_ip_on_launch = false
+      tags                    = {}
+    }
+  }
+
+  # Mock S3 bucket resources
+  mock_resource "aws_s3_bucket" {
+    defaults = {
+      id                  = "test-bucket-12345"
+      arn                 = "arn:aws:s3:::test-bucket-12345"
+      bucket              = "test-bucket-12345"
+      bucket_domain_name  = "test-bucket-12345.s3.amazonaws.com"
+      region              = "us-west-2"
+      tags                = {}
+    }
+  }
+
+  # Mock data sources - critical for testing modules that query existing infrastructure
+  mock_data "aws_ami" {
+    defaults = {
+      id                  = "ami-0c55b159cbfafe1f0"
+      name                = "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20210430"
+      architecture        = "x86_64"
+      root_device_type    = "ebs"
+      virtualization_type = "hvm"
+      owners              = ["099720109477"]
+    }
+  }
+
+  mock_data "aws_availability_zones" {
+    defaults = {
+      names = ["us-west-2a", "us-west-2b", "us-west-2c"]
+      zone_ids = ["usw2-az1", "usw2-az2", "usw2-az3"]
+    }
+  }
+
+  mock_data "aws_vpc" {
+    defaults = {
+      id                   = "vpc-12345678"
+      cidr_block          = "10.0.0.0/16"
+      enable_dns_hostnames = true
+      enable_dns_support   = true
+    }
+  }
+}
+
+# Test 1: Validate resource configuration with mocked values
+run "test_instance_with_mocks" {
+  command = plan  # Mocks only work with plan mode
+
+  variables {
+    instance_type = "t2.micro"
+    ami_id        = "ami-12345678"
+  }
+
+  assert {
+    condition     = aws_instance.example.instance_type == "t2.micro"
+    error_message = "Instance type should match input variable"
+  }
+
+  assert {
+    condition     = aws_instance.example.id == "i-1234567890abcdef0"
+    error_message = "Mock should return consistent instance ID"
+  }
+
+  assert {
+    condition     = can(regex("^203\\.0\\.113\\.", aws_instance.example.public_ip))
+    error_message = "Mock public IP should be in TEST-NET-3 range"
+  }
+}
+
+# Test 2: Validate data source behavior with mocked results
+run "test_data_source_with_mocks" {
+  command = plan
+
+  assert {
+    condition     = data.aws_ami.ubuntu.id == "ami-0c55b159cbfafe1f0"
+    error_message = "Mock data source should return predictable AMI ID"
+  }
+
+  assert {
+    condition     = length(data.aws_availability_zones.available.names) == 3
+    error_message = "Should return 3 mocked availability zones"
+  }
+
+  assert {
+    condition = contains(
+      data.aws_availability_zones.available.names,
+      "us-west-2a"
+    )
+    error_message = "Should include us-west-2a in mocked zones"
+  }
+}
+
+# Test 3: Validate complex logic with for_each and mocks
+run "test_multiple_subnets_with_mocks" {
+  command = plan
+
+  variables {
+    subnet_cidrs = {
+      "public-a"  = "10.0.1.0/24"
+      "public-b"  = "10.0.2.0/24"
+      "private-a" = "10.0.10.0/24"
+      "private-b" = "10.0.11.0/24"
+    }
+  }
+
+  # Test that all subnets are created
+  assert {
+    condition     = length(keys(aws_subnet.subnets)) == 4
+    error_message = "Should create 4 subnets from for_each map"
+  }
+
+  # Test that public subnets have correct naming
+  assert {
+    condition = alltrue([
+      for name, subnet in aws_subnet.subnets :
+      can(regex("^public-", name)) ? subnet.map_public_ip_on_launch == true : true
+    ])
+    error_message = "Public subnets should map public IPs on launch"
+  }
+
+  # Test that all subnets belong to mocked VPC
+  assert {
+    condition = alltrue([
+      for subnet in aws_subnet.subnets :
+      subnet.vpc_id == "vpc-12345678"
+    ])
+    error_message = "All subnets should belong to mocked VPC"
+  }
+}
+
+# Test 4: Validate output values with mocks
+run "test_outputs_with_mocks" {
+  command = plan
+
+  assert {
+    condition     = output.vpc_id == "vpc-12345678"
+    error_message = "VPC ID output should match mocked value"
+  }
+
+  assert {
+    condition     = can(regex("^vpc-", output.vpc_id))
+    error_message = "VPC ID output should have correct format"
+  }
+
+  assert {
+    condition     = output.instance_public_ip == "203.0.113.1"
+    error_message = "Instance public IP should match mock"
+  }
+}
+
+# Test 5: Test conditional logic with mocks
+run "test_conditional_resources_with_mocks" {
+  command = plan
+
+  variables {
+    create_bastion     = true
+    create_nat_gateway = false
+  }
+
+  assert {
+    condition     = length(aws_instance.bastion) == 1
+    error_message = "Bastion should be created when enabled"
+  }
+
+  assert {
+    condition     = length(aws_nat_gateway.nat) == 0
+    error_message = "NAT gateway should not be created when disabled"
+  }
+}
+
+# Test 6: Test tag propagation with mocks
+run "test_tag_inheritance_with_mocks" {
+  command = plan
+
+  variables {
+    common_tags = {
+      Environment = "test"
+      ManagedBy   = "Terraform"
+      Project     = "MockTesting"
+    }
+  }
+
+  # Verify tags are properly merged with defaults
+  assert {
+    condition = alltrue([
+      for key in keys(var.common_tags) :
+      contains(keys(aws_instance.example.tags), key)
+    ])
+    error_message = "All common tags should be present on instance"
+  }
+
+  assert {
+    condition     = aws_instance.example.tags["Environment"] == "test"
+    error_message = "Environment tag should be set correctly"
+  }
+}
+
+# Test 7: Test validation rules with mocks (expect_failures)
+run "test_invalid_cidr_with_mocks" {
+  command = plan
+
+  variables {
+    vpc_cidr = "192.168.0.0/8"  # Invalid - should be /16 or /24
+  }
+
+  # Expect custom validation to fail
+  expect_failures = [
+    var.vpc_cidr
+  ]
+}
+
+# Test 8: Sequential mock tests with state sharing
+run "setup_vpc_with_mocks" {
+  command = plan
+
+  variables {
+    vpc_cidr = "10.0.0.0/16"
+    vpc_name = "test-vpc"
+  }
+
+  assert {
+    condition     = aws_vpc.main.cidr_block == "10.0.0.0/16"
+    error_message = "VPC CIDR should match input"
+  }
+}
+
+run "test_subnet_references_vpc_with_mocks" {
+  command = plan
+
+  variables {
+    vpc_id      = run.setup_vpc_with_mocks.vpc_id
+    subnet_cidr = "10.0.1.0/24"
+  }
+
+  assert {
+    condition     = aws_subnet.example.vpc_id == run.setup_vpc_with_mocks.vpc_id
+    error_message = "Subnet should reference VPC from previous run"
+  }
+
+  assert {
+    condition     = aws_subnet.example.vpc_id == "vpc-12345678"
+    error_message = "VPC ID should match mocked value"
+  }
+}
+```
+
+**Key Benefits of Mock Testing:**
+
+1. **No Cloud Costs**: Runs entirely locally without creating infrastructure
+2. **No Credentials Needed**: Perfect for CI/CD environments without cloud access
+3. **Fast Execution**: Tests complete in seconds, not minutes
+4. **Predictable Results**: Data sources return consistent values
+5. **Isolated Testing**: No dependencies on existing cloud resources
+6. **Safe Experimentation**: Test destructive operations without risk
+
+**Limitations of Mock Testing:**
+
+1. **Plan Mode Only**: Mocks don't work with `command = apply`
+2. **Not Real Behavior**: Mocks may not reflect actual provider API behavior
+3. **Computed Values**: Mock defaults may not match real computed attributes
+4. **Provider Updates**: Mocks need manual updates when provider schemas change
+5. **Resource Interactions**: Can't test real resource dependencies or timing issues
+
+**When to Use Mock Tests:**
+
+- ✅ Testing Terraform logic and conditionals
+- ✅ Validating variable transformations
+- ✅ Testing for_each and count expressions
+- ✅ Checking output calculations
+- ✅ Local development without cloud access
+- ✅ Fast CI/CD feedback loops
+- ❌ Validating actual provider behavior
+- ❌ Testing real resource creation side effects
+- ❌ Verifying API-level interactions
+- ❌ End-to-end integration testing
+
 ## CI/CD Integration
 
 ### GitHub Actions Example
