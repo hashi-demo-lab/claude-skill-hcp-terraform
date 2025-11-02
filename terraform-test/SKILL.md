@@ -31,7 +31,6 @@ my-module/
 ├── variables.tf
 ├── outputs.tf
 └── tests/
-    ├── defaults_unit_test.tftest.hcl        # Unit test (plan mode - fast, no resources)
     ├── validation_unit_test.tftest.hcl      # Unit test (plan mode)
     ├── edge_cases_unit_test.tftest.hcl      # Unit test (plan mode)
     └── full_stack_integration_test.tftest.hcl  # Integration test (apply mode - creates real resources)
@@ -71,7 +70,7 @@ Each `run` block executes a command against your configuration. Run blocks execu
 
 ```hcl
 run "test_instance_creation" {
-  # command defaults to "apply"
+  command = apply
 
   assert {
     condition     = aws_instance.example.id != ""
