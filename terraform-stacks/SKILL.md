@@ -544,25 +544,6 @@ component "database" {
 
 ## Troubleshooting
 
-### File Extension Warnings
-
-Newer versions use `.tfcomponent.hcl` instead of `.tfcomponent.hcl`:
-
-```
-Warning: Deprecated filename usage
-This configuration is using the deprecated .tfcomponent.hcl file extensions.
-Update files to use .tfcomponent.hcl or .tfcomponent.json extensions.
-```
-
-**Solution**: Rename component configuration files:
-- `components.tfcomponent.hcl` → `components.tfcomponent.hcl`
-- Keep deployment files as `.tfdeploy.hcl`
-
-### Provider Configuration Errors
-
-**Issue**: Providers defined inside modules
-**Solution**: Move all provider configurations to Stack-level `.tfcomponent.hcl` files
-
 ### Circular Dependencies
 
 **Issue**: Component A references Component B, and Component B references Component A
