@@ -13,7 +13,9 @@
       "description": "Comprehensive guide for Terraform code style, formatting, and best practices based on HashiCorp's official standards and Azure Verified Modules (AVM) requirements",
       "version": "1.0.0",
       "source": "./terraform-style-guide",
-      "author": "Simon Lynch",
+      "author": {
+        "name": "Simon Lynch"
+      },
       "license": "MIT",
       "keywords": [
         "terraform",
@@ -30,7 +32,9 @@
       "description": "Complete guide for writing and running automated tests for Terraform configurations using Terraform's native testing framework",
       "version": "1.0.0",
       "source": "./terraform-test",
-      "author": "Simon Lynch",
+      "author": {
+        "name": "Simon Lynch"
+      },
       "license": "MIT",
       "keywords": [
         "terraform",
@@ -46,7 +50,9 @@
       "description": "Comprehensive guide for working with HashiCorp Terraform Stacks, enabling infrastructure deployments across multiple environments, regions, and accounts",
       "version": "1.0.0",
       "source": "./terraform-stacks",
-      "author": "Simon Lynch",
+      "author": {
+        "name": "Simon Lynch"
+      },
       "license": "MIT",
       "keywords": [
         "terraform stacks",
