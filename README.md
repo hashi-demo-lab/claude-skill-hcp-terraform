@@ -16,15 +16,25 @@ Complete guide for Terraform's native testing framework. Learn to write unit and
 
 Comprehensive guide for HCP Terraform Stacks. Build multi-region, multi-environment deployments with components, deployments, and OIDC authentication.
 
-## Installation
+# Installation of HCP Terraform - Claude Skills
 
+
+## Add the marketplace
 ```bash
-# Add the marketplace
 /plugin marketplace add hashi-demo-lab/claude-skill-hcp-terraform
+```
 
-# Install skills
+# Install skill terraform-style-guide
+```bash
 /plugin install terraform-style-guide@hcp-terraform-skills
+```
+
+# Install skill terraform-test
+```bash
 /plugin install terraform-test@hcp-terraform-skills
+```
+# Install skill terraform-stacks
+```bash
 /plugin install terraform-stacks@hcp-terraform-skills
 ```
 
