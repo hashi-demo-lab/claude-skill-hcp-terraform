@@ -55,7 +55,8 @@ Skills activate automatically when working with Terraform files:
 
 ```text
 claude-skill-hcp-terraform/
-├── marketplace.json                  # Marketplace catalog
+├── .claude-plugin/
+│   └── marketplace.json              # Marketplace catalog
 ├── terraform-style-guide/
 │   ├── plugin.json
 │   └── SKILL.md                     # Main skill content

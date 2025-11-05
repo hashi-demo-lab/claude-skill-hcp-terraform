@@ -6,7 +6,7 @@
     "name": "Simon Lynch",
     "url": "https://github.com/hashi-demo-lab/claude-skill-hcp-terraform"
   },
-  "pluginRoot": ".",
+  "pluginRoot": "..",
   "plugins": [
     {
       "name": "terraform-style-guide",
