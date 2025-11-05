@@ -1,0 +1,62 @@
+{
+  "name": "hcp-terraform-skills",
+  "description": "Comprehensive Claude Code skills for HashiCorp Terraform, including style guides, testing frameworks, and Terraform Stacks configurations",
+  "version": "1.0.0",
+  "owner": {
+    "name": "Simon Lynch",
+    "url": "https://github.com/hashi-demo-lab/claude-skill-hcp-terraform"
+  },
+  "pluginRoot": ".",
+  "plugins": [
+    {
+      "name": "terraform-style-guide",
+      "description": "Comprehensive guide for Terraform code style, formatting, and best practices based on HashiCorp's official standards and Azure Verified Modules (AVM) requirements",
+      "version": "1.0.0",
+      "source": "./terraform-style-guide",
+      "author": "Simon Lynch",
+      "license": "MIT",
+      "keywords": [
+        "terraform",
+        "style-guide",
+        "formatting",
+        "best-practices",
+        "azure",
+        "avm",
+        "hashicorp"
+      ]
+    },
+    {
+      "name": "terraform-test",
+      "description": "Complete guide for writing and running automated tests for Terraform configurations using Terraform's native testing framework",
+      "version": "1.0.0",
+      "source": "./terraform-test",
+      "author": "Simon Lynch",
+      "license": "MIT",
+      "keywords": [
+        "terraform",
+        "testing",
+        "tftest",
+        "unit-tests",
+        "integration-tests",
+        "mock-providers"
+      ]
+    },
+    {
+      "name": "terraform-stacks",
+      "description": "Comprehensive guide for working with HashiCorp Terraform Stacks, enabling infrastructure deployments across multiple environments, regions, and accounts",
+      "version": "1.0.0",
+      "source": "./terraform-stacks",
+      "author": "Simon Lynch",
+      "license": "MIT",
+      "keywords": [
+        "terraform stacks",
+        "stacks",
+        "hcp-terraform",
+        "multi-region",
+        "multi-environment",
+        "deployments",
+        "components"
+      ]
+    }
+  ]
+}
