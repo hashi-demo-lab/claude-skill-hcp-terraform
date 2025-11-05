@@ -80,45 +80,69 @@ Comprehensive guide for working with HashiCorp Terraform Stacks, enabling infras
 ### Prerequisites
 
 - **Claude Code** installed and configured
-- Git (for cloning this repository)
+- Access to GitHub (for remote installation)
 
 ### Quick Install (Recommended)
 
-Install the entire marketplace with all three skills:
-
-#### Option 1: Install from GitHub
+Install from GitHub in two simple steps:
 
 ```bash
-# In Claude Code
+# Step 1: Add the marketplace
 /plugin marketplace add hashi-demo-lab/claude-skill-hcp-terraform
-```
 
-Then install individual skills:
-
-```bash
+# Step 2: Install all three skills
 /plugin install terraform-style-guide@hcp-terraform-skills
 /plugin install terraform-test@hcp-terraform-skills
 /plugin install terraform-stacks@hcp-terraform-skills
 ```
 
-#### Option 2: Install from Local Clone
+Or install individual skills as needed:
+
+```bash
+# Install only the style guide
+/plugin install terraform-style-guide@hcp-terraform-skills
+
+# Install only the testing guide
+/plugin install terraform-test@hcp-terraform-skills
+
+# Install only the stacks guide
+/plugin install terraform-stacks@hcp-terraform-skills
+```
+
+### Alternative Installation Methods
+
+#### Local Installation
+
+For local development or offline use:
 
 ```bash
 # Clone the repository
 git clone https://github.com/hashi-demo-lab/claude-skill-hcp-terraform.git
+cd claude-skill-hcp-terraform
 
-# In Claude Code, add the local marketplace
-/plugin marketplace add file:///path/to/claude-skill-hcp-terraform
+# Add the local marketplace
+/plugin marketplace add file://$(pwd)
 
-# Install individual skills
+# Install skills
 /plugin install terraform-style-guide@hcp-terraform-skills
 /plugin install terraform-test@hcp-terraform-skills
 /plugin install terraform-stacks@hcp-terraform-skills
 ```
 
+#### Direct Plugin Installation
+
+Install skills directly without adding the marketplace:
+
+```bash
+# Install from GitHub subdirectories
+/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-style-guide
+/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-test
+/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-stacks
+```
+
 ### Team Installation
 
-For team-wide access, configure automatic marketplace installation in `.claude/settings.json`:
+Enable automatic marketplace access for your team by adding to `.claude/settings.json`:
 
 ```json
 {
@@ -131,35 +155,52 @@ For team-wide access, configure automatic marketplace installation in `.claude/s
 }
 ```
 
-Team members can then install skills directly:
+Team members can then install skills without adding the marketplace first:
 
 ```bash
 /plugin install terraform-style-guide@hcp-terraform-skills
-```
-
-### Alternative: Direct Skill Installation
-
-Install skills individually without the marketplace:
-
-```bash
-# Install specific skills directly from GitHub subdirectories
-/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-style-guide
-/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-test
-/plugin install github:hashi-demo-lab/claude-skill-hcp-terraform/terraform-stacks
+/plugin install terraform-test@hcp-terraform-skills
+/plugin install terraform-stacks@hcp-terraform-skills
 ```
 
 ### Verify Installation
 
-List installed marketplaces:
+Confirm marketplace is added:
 
 ```bash
 /plugin marketplace list
 ```
 
-List available plugins:
+Expected output:
+```
+hcp-terraform-skills (hashi-demo-lab/claude-skill-hcp-terraform)
+```
+
+Confirm skills are installed:
 
 ```bash
 /plugin list
+```
+
+Expected output should include:
+```
+terraform-style-guide (1.0.0)
+terraform-test (1.0.0)
+terraform-stacks (1.0.0)
+```
+
+### Updating Skills
+
+To update to the latest version:
+
+```bash
+# Refresh the marketplace
+/plugin marketplace update hcp-terraform-skills
+
+# Reinstall skills to get updates
+/plugin install terraform-style-guide@hcp-terraform-skills --force
+/plugin install terraform-test@hcp-terraform-skills --force
+/plugin install terraform-stacks@hcp-terraform-skills --force
 ```
 
 ## Usage
