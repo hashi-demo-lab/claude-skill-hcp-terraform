@@ -508,11 +508,13 @@ Choose the appropriate meta-argument based on your use case:
 - Resources need distinct argument values
 - You want to reference resources by key instead of index
 - Resources are based on a map or set
-- preference for_each over count
+- Preference for_each over count
 
 **Use `count`** when:
 - Conditional resource creation (0 or 1)
-- Do no use count for simple numeric repetition
+
+**Avoid `count`** for:
+- Simple numeric repetition (use `for_each` with a set or map instead)
 
 ### for_each Examples
 
@@ -592,9 +594,13 @@ resource "aws_cloudwatch_metric_alarm" "cpu" {
 
 # Reference (when created): aws_cloudwatch_metric_alarm.cpu[0].id
 ```
-## Avoid the below example
+
+### Anti-pattern: count for Numeric Repetition
+
+**❌ Avoid this pattern** - Using `count` for simple numeric repetition:
+
 ```hcl
-# Simple numeric repetition
+# BAD: Don't use count for numeric repetition
 variable "instance_count" {
   type    = number
   default = 3
@@ -610,9 +616,32 @@ resource "aws_instance" "web" {
     Name = "web-${count.index}"
   }
 }
-
-# Reference: aws_instance.web[0].id, aws_instance.web[1].id, etc.
 ```
+
+**✅ Better approach** - Use `for_each` with a set instead:
+
+```hcl
+# GOOD: Use for_each for multiple similar resources
+variable "instance_names" {
+  type    = set(string)
+  default = ["web-1", "web-2", "web-3"]
+}
+
+resource "aws_instance" "web" {
+  for_each = var.instance_names
+
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = each.key
+  }
+}
+
+# Reference: aws_instance.web["web-1"].id
+```
+
+**Why?** Using `for_each` provides stable resource addresses that don't change when you add or remove instances from the middle of the list.
 
 ---
 
@@ -1464,7 +1493,6 @@ For Azure Verified Modules, add these items to your review checklist:
 - [ ] No `provider` declarations in module (except aliases)
 - [ ] `.terraform-docs.yml` present
 - [ ] New resources have feature toggles
-- [ ] Branch protection policies enabled
 - [ ] CODEOWNERS file present
 
 ---
