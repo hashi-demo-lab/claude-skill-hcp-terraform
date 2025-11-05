@@ -1,11 +1,11 @@
 ---
 name: terraform-style-guide
-description: Comprehensive guide for Terraform code style, formatting, and best practices based on HashiCorp's official standards. Use when writing or reviewing Terraform configurations, formatting code, organizing files and modules, establishing team conventions, managing version control, or ensuring code quality and consistency across infrastructure projects.
+description: Comprehensive guide for Terraform code style, formatting, and best practices based on HashiCorp's official standards and Azure Verified Modules (AVM) requirements. Use when writing or reviewing Terraform configurations, formatting code, organizing files and modules, establishing team conventions, managing version control, ensuring code quality and consistency across infrastructure projects, or developing Azure Verified Modules.
 ---
 
 # Terraform Style Guide
 
-Adopting and adhering to a style guide keeps your Terraform code legible, scalable, and maintainable. This guide is based on HashiCorp's official Terraform style conventions and best practices.
+Adopting and adhering to a style guide keeps your Terraform code legible, scalable, and maintainable. This guide is based on HashiCorp's official Terraform style conventions and best practices, enhanced with Azure Verified Modules (AVM) requirements for Azure-specific Terraform development.
 
 ## Table of Contents
 
