@@ -836,7 +836,7 @@ terraform apply
 
 ---
 
-## Testing
+## Testing and Policy
 
 ### Module Testing
 
@@ -1518,7 +1518,3 @@ By following these guidelines, you'll create Terraform code that is:
 
 *Last Updated: November 5, 2025*
 *Based on: HashiCorp Terraform Style Conventions & Azure Verified Modules Requirements*
-- [ ] `.gitignore` excludes state files and secrets
-- [ ] Tests written for modules
-- [ ] Policy requirements satisfied
-- [ ] Code reviewed by teammate
