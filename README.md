@@ -68,15 +68,25 @@ claude-skill-hcp-terraform/
 ├── .claude-plugin/
 │   └── marketplace.json              # Marketplace catalog
 ├── terraform-style-guide/
-│   ├── plugin.json
-│   └── SKILL.md                     # Main skill content
+│   ├── plugin.json                   # Skill metadata
+│   ├── SKILL.md                      # Main skill content
+│   ├── CLAUDE.md                     # Claude Code guidance
+│   ├── README.md                     # Skill documentation
+│   └── AVM.md                        # Azure Verified Modules reference
 ├── terraform-test/
-│   ├── plugin.json
-│   └── SKILL.md
+│   ├── plugin.json                   # Skill metadata
+│   ├── SKILL.md                      # Main skill content
+│   ├── CLAUDE.md                     # Claude Code guidance
+│   └── README.md                     # Skill documentation
 └── terraform-stacks/
-    ├── plugin.json
-    ├── SKILL.md
-    └── references/                  # Additional documentation
+    ├── plugin.json                   # Skill metadata
+    ├── SKILL.md                      # Main skill content
+    ├── CLAUDE.md                     # Claude Code guidance
+    ├── README.md                     # Skill documentation
+    └── references/                   # Additional documentation
+        ├── component-blocks.md
+        ├── deployment-blocks.md
+        └── examples.md
 ```
 
 ## Requirements
