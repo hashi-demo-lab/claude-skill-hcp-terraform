@@ -18,25 +18,20 @@ Comprehensive guide for HCP Terraform Stacks. Build multi-region, multi-environm
 
 # Installation of HCP Terraform - Claude Skills
 
-
 ## Add the marketplace
 ```bash
 /plugin marketplace add hashi-demo-lab/claude-skill-hcp-terraform
 ```
 
-# Install skill terraform-style-guide
+## Install the plugin (includes all three skills)
 ```bash
-/plugin install terraform-style-guide@hcp-terraform-skills
+/plugin install hcp-terraform-skills
 ```
 
-# Install skill terraform-test
-```bash
-/plugin install terraform-test@hcp-terraform-skills
-```
-# Install skill terraform-stacks
-```bash
-/plugin install terraform-stacks@hcp-terraform-skills
-```
+This installs all three skills:
+- `terraform-style-guide` - HashiCorp Terraform style conventions
+- `terraform-test` - Terraform testing framework guidance
+- `terraform-stacks` - HCP Terraform Stacks configurations
 
 ### Team Installation
 
