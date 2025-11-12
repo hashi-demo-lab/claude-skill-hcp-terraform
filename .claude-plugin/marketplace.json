@@ -5,19 +5,20 @@
     "url": "https://github.com/hashi-demo-lab/claude-skill-hcp-terraform"
   },
   "metadata": {
-    "description": "Comprehensive Claude Code skills for HashiCorp Terraform, including style guides, testing frameworks, and Terraform Stacks configurations",
+    "description": "Comprehensive Claude Code skills for HashiCorp Terraform, including style guides, testing frameworks, Terraform Stacks configurations, and HCP Terraform automation",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "hcp-terraform-skills",
-      "description": "Collection of HashiCorp Terraform skills including style guides, testing frameworks, and Terraform Stacks",
+      "description": "Collection of HashiCorp Terraform skills including style guides, testing frameworks, Terraform Stacks, and HCP Terraform automation",
       "source": "./",
       "strict": false,
       "skills": [
         "./terraform-style-guide",
         "./terraform-test",
-        "./terraform-stacks"
+        "./terraform-stacks",
+        "./terraform-mcp-as-code"
       ]
     }
   ]
