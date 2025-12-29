@@ -1,0 +1,21 @@
+{
+  "name": "terraform-lsp",
+  "description": "HashiCorp Terraform language server for enhanced code intelligence including completion, diagnostics, hover, and go-to-definition",
+  "version": "1.0.0",
+  "author": {
+    "name": "Simon Lynch"
+  },
+  "license": "MIT",
+  "category": "development",
+  "strict": false,
+  "lspServers": {
+    "terraform": {
+      "command": "terraform-ls",
+      "args": ["serve"],
+      "extensionToLanguage": {
+        ".tf": "terraform",
+        ".tfvars": "terraform-vars"
+      }
+    }
+  }
+}

@@ -20,6 +20,13 @@
         "./terraform-stacks",
         "./terraform-mcp-as-code"
       ]
+    },
+    {
+      "name": "terraform-lsp",
+      "description": "HashiCorp Terraform language server for enhanced code intelligence",
+      "source": "./plugins/terraform-lsp",
+      "category": "development",
+      "strict": false
     }
   ]
 }
