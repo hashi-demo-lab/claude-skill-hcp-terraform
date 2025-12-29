@@ -10,23 +10,34 @@
   },
   "plugins": [
     {
-      "name": "hcp-terraform-skills",
-      "description": "Collection of HashiCorp Terraform skills including style guides, testing frameworks, Terraform Stacks, and HCP Terraform automation",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./terraform-style-guide",
-        "./terraform-test",
-        "./terraform-stacks",
-        "./terraform-mcp-as-code"
-      ]
+      "name": "terraform-style-guide",
+      "description": "Comprehensive guide for Terraform code style, formatting, and best practices based on HashiCorp's official standards and Azure Verified Modules (AVM) requirements",
+      "source": "./terraform-style-guide",
+      "category": "development"
+    },
+    {
+      "name": "terraform-test",
+      "description": "Comprehensive guide for writing and running Terraform tests with run blocks, assertions, mock providers, and CI/CD integration",
+      "source": "./terraform-test",
+      "category": "development"
+    },
+    {
+      "name": "terraform-stacks",
+      "description": "Comprehensive guide for HCP Terraform Stacks configurations including components, deployments, and OIDC authentication",
+      "source": "./terraform-stacks",
+      "category": "development"
+    },
+    {
+      "name": "terraform-mcp-as-code",
+      "description": "Automate Terraform Cloud/Enterprise operations programmatically via the HashiCorp MCP server",
+      "source": "./terraform-mcp-as-code",
+      "category": "development"
     },
     {
       "name": "terraform-lsp",
       "description": "HashiCorp Terraform language server for enhanced code intelligence",
       "source": "./plugins/terraform-lsp",
-      "category": "development",
-      "strict": false
+      "category": "development"
     }
   ]
 }

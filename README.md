@@ -38,23 +38,24 @@ brew install hashicorp/tap/terraform-ls
 
 ## Install plugins
 
-**Skills Plugin** (includes all four skills):
-```bash
-/plugin install hcp-terraform-skills
-```
+Install individual plugins as needed:
 
-This installs:
-- `terraform-style-guide` - HashiCorp Terraform style conventions
-- `terraform-test` - Terraform testing framework guidance
-- `terraform-stacks` - HCP Terraform Stacks configurations
-- `terraform-mcp-as-code` - HCP Terraform automation via MCP server
-
-**LSP Plugin** (for code intelligence):
 ```bash
+# Terraform style conventions and best practices
+/plugin install terraform-style-guide
+
+# Terraform testing framework guidance
+/plugin install terraform-test
+
+# HCP Terraform Stacks configurations
+/plugin install terraform-stacks
+
+# HCP Terraform automation via MCP server
+/plugin install terraform-mcp-as-code
+
+# Language server for code intelligence (requires terraform-ls installed)
 /plugin install terraform-lsp
 ```
-
-This enables language server features for `.tf` and `.tfvars` files (requires terraform-ls installed).
 
 ### Team Installation
 
