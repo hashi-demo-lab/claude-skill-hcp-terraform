@@ -20,6 +20,15 @@ Comprehensive guide for HCP Terraform Stacks. Build multi-region, multi-environm
 
 Automate Terraform Cloud/Enterprise operations programmatically. Includes TypeScript wrappers for creating workspaces, triggering runs, managing variables, and searching registries via the HashiCorp MCP server.
 
+### 🔧 Terraform LSP
+
+Language Server Protocol integration using [terraform-ls](https://github.com/hashicorp/terraform-ls), HashiCorp's official Terraform language server. Provides code completion, diagnostics, hover documentation, and go-to-definition for `.tf` and `.tfvars` files.
+
+**Prerequisite**: Install terraform-ls before using this plugin:
+```bash
+brew install hashicorp/tap/terraform-ls
+```
+
 # Installation of HCP Terraform - Claude Skills
 
 ## Add the marketplace
@@ -27,16 +36,25 @@ Automate Terraform Cloud/Enterprise operations programmatically. Includes TypeSc
 /plugin marketplace add hashi-demo-lab/claude-skill-hcp-terraform
 ```
 
-## Install the plugin (includes all three skills)
+## Install plugins
+
+**Skills Plugin** (includes all four skills):
 ```bash
 /plugin install hcp-terraform-skills
 ```
 
-This installs all four skills:
+This installs:
 - `terraform-style-guide` - HashiCorp Terraform style conventions
 - `terraform-test` - Terraform testing framework guidance
 - `terraform-stacks` - HCP Terraform Stacks configurations
 - `terraform-mcp-as-code` - HCP Terraform automation via MCP server
+
+**LSP Plugin** (for code intelligence):
+```bash
+/plugin install terraform-lsp
+```
+
+This enables language server features for `.tf` and `.tfvars` files (requires terraform-ls installed).
 
 ### Team Installation
 
@@ -68,6 +86,10 @@ Skills activate automatically when working with Terraform files:
 claude-skill-hcp-terraform/
 ├── .claude-plugin/
 │   └── marketplace.json              # Marketplace catalog
+├── plugins/
+│   └── terraform-lsp/
+│       ├── plugin.json               # LSP configuration
+│       └── README.md                 # LSP documentation
 ├── terraform-style-guide/
 │   ├── plugin.json                   # Skill metadata
 │   ├── SKILL.md                      # Main skill content
@@ -109,6 +131,7 @@ claude-skill-hcp-terraform/
 - **Terraform Test**: Terraform 1.6.0+ (mock providers require 1.7.0+)
 - **Terraform Stacks**: HCP Terraform or Terraform Enterprise
 - **Terraform MCP as Code**: Docker, Terraform Cloud/Enterprise account with API token
+- **Terraform LSP**: [terraform-ls](https://github.com/hashicorp/terraform-ls) installed (`brew install hashicorp/tap/terraform-ls`)
 
 ## Contributing
 
