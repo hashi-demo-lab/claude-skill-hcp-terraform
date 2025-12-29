@@ -37,7 +37,18 @@
       "name": "terraform-lsp",
       "description": "HashiCorp Terraform language server for enhanced code intelligence",
       "source": "./plugins/terraform-lsp",
-      "category": "development"
+      "category": "development",
+      "strict": false,
+      "lspServers": {
+        "terraform": {
+          "command": "terraform-ls",
+          "args": ["serve"],
+          "extensionToLanguage": {
+            ".tf": "terraform",
+            ".tfvars": "terraform-vars"
+          }
+        }
+      }
     }
   ]
 }
