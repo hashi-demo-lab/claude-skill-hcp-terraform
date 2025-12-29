@@ -45,7 +45,16 @@
           "args": ["serve"],
           "extensionToLanguage": {
             ".tf": "terraform",
-            ".tfvars": "terraform-vars"
+            ".tfvars": "terraform-vars",
+            ".tfstack.hcl": "terraform-stack",
+            ".tfcomponent.hcl": "terraform-stack",
+            ".tfdeploy.hcl": "terraform-deploy"
+          },
+          "initializationOptions": {
+            "experimentalFeatures": {
+              "validateOnSave": true,
+              "prefillRequiredFields": true
+            }
           }
         }
       }

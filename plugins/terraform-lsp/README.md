@@ -2,9 +2,18 @@
 
 Language Server Protocol (LSP) integration for HashiCorp Terraform using [terraform-ls](https://github.com/hashicorp/terraform-ls), the official Terraform language server.
 
+## IDE Integration Only
+
+This plugin provides `lspServers` configuration for Claude Code IDE extensions:
+
+- **VS Code** - Works with the Claude Code VS Code extension
+- **JetBrains** - Works with the Claude Code JetBrains plugin
+
+**Note:** The Claude Code CLI's LSP tool does not currently consume plugin-defined language servers. This plugin only enhances IDE-based Claude Code experiences.
+
 ## Features
 
-When enabled, this plugin provides enhanced code intelligence for Terraform files:
+When enabled in a supported IDE, this plugin provides enhanced code intelligence for Terraform files:
 
 - **Completion** - Auto-complete for resources, attributes, and variables
 - **Diagnostics** - Real-time syntax and validation errors
@@ -19,7 +28,13 @@ You must have `terraform-ls` installed on your system before using this plugin.
 
 ### Installation
 
-**macOS/Linux (Homebrew):**
+```bash
+# Using Go
+go install github.com/hashicorp/terraform-ls@latest
+```
+
+#### On MacOS
+
 ```bash
 brew install hashicorp/tap/terraform-ls
 ```
@@ -38,7 +53,7 @@ brew install hashicorp/tap/terraform-ls
 
 ## Usage
 
-Once installed, the language server activates automatically when you open `.tf` or `.tfvars` files in Claude Code.
+Once terraform-ls is installed and you have the Claude Code IDE extension (VS Code or JetBrains), the language server activates automatically when you open `.tf` or `.tfvars` files.
 
 ## Resources
 
