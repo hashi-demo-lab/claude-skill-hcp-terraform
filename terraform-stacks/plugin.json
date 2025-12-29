@@ -14,7 +14,7 @@
     "multi-environment",
     "deployments",
     "components",
-    "infrastructure"
+    "terraform stacks"
   ],
   "skills": [
     {
